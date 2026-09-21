@@ -520,6 +520,31 @@ int performEvictions(void) {
                 }
                 if (!total_keys) break; /* No keys to evict. */
 
+                /* Count of how many of the pool's candidate keys ended up 
+                 * with the exact same idleness score. */
+                int live = 0;        
+                int tie_groups = 0;  
+                int largest_tie = 1; 
+                int run = 1;  
+
+                for (int pool_i = 0; pool_i < EVPOOL_SIZE; pool_i++) {
+                    if (pool[pool_i].key == NULL) continue;
+                    live++;
+                    if (pool_i > 0 && pool[pool_i - 1].key && pool[pool_i].idle == pool[pool_i - 1].idle) {
+                        run++;
+                    } else {
+                        if (run > 1) tie_groups++;
+                        if (run > largest_tie) largest_tie = run;
+                        run = 1;
+                    }
+                }
+
+                if (run > 1) tie_groups++;
+                if (run > largest_tie) largest_tie = run;
+                
+                serverLog(LL_NOTICE, "evpool: %d candidate keys, %d groups of tied scores, biggest group had %d keys",
+                            live, tie_groups, largest_tie);
+
                 /* Go backward from best to worst element to evict. */
                 for (k = EVPOOL_SIZE - 1; k >= 0; k--) {
                     if (pool[k].key == NULL) continue;
