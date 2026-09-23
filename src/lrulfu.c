@@ -164,13 +164,17 @@ uint32_t lrulfu_getIdleness(uint32_t lrulfu, uint32_t *idleness) {
         uint8_t freq;
         uint16_t prev_time = (uint16_t)(lrulfu >> 8);   
         lrulfu = lfu_getFrequency(lrulfu, &freq);         
-        uint16_t elapsed = LFUGetTimeInMinutes() - prev_time;  // Reciprocal of t_i. This is similar to the freq inverse in LFU
+        uint16_t elapsed = LFUGetTimeInMinutes() - prev_time;  // Reciprocal of t_i. Based on the freq inverse in LFU
 
         if (freq == 0) {
             *idleness = UINT32_MAX;                        
         } else {
             uint32_t t = elapsed ? elapsed : 1;             
-            *idleness = (t << 8) / freq;                    
+            // *idleness = (t << 8) / freq;
+
+            /* Follows the MAX - freq of original LFU */
+            uint32_t p = ((uint32_t)freq << 8) / t;   
+            *idleness = ((uint32_t)UINT8_MAX << 8) - p;                
         }
     } else {
         *idleness = lru_getIdleSecs(lrulfu);

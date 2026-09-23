@@ -522,15 +522,18 @@ int performEvictions(void) {
 
                 /* Count of how many of the pool's candidate keys ended up 
                  * with the exact same idleness score. */
-                int live = 0;        
-                int tie_groups = 0;  
-                int largest_tie = 1; 
-                int run = 1;  
+                int live = 0;
+                int tie_groups = 0;
+                int largest_tie = 1;
+                int run = 1;
+                char idles[512];
+                int idles_len = 0;
 
-                for (int pool_i = 0; pool_i < EVPOOL_SIZE; pool_i++) {
-                    if (pool[pool_i].key == NULL) continue;
+                for (int pi = 0; pi < EVPOOL_SIZE && pool[pi].key != NULL; pi++) {
                     live++;
-                    if (pool_i > 0 && pool[pool_i - 1].key && pool[pool_i].idle == pool[pool_i - 1].idle) {
+                    idles_len += snprintf(idles + idles_len, sizeof(idles) - idles_len,
+                                           "%s%llu", pi == 0 ? "" : ",", pool[pi].idle);
+                    if (pi > 0 && pool[pi].idle == pool[pi - 1].idle) {
                         run++;
                     } else {
                         if (run > 1) tie_groups++;
@@ -538,12 +541,12 @@ int performEvictions(void) {
                         run = 1;
                     }
                 }
-
                 if (run > 1) tie_groups++;
                 if (run > largest_tie) largest_tie = run;
-                
-                serverLog(LL_NOTICE, "evpool: %d candidate keys, %d groups of tied scores, biggest group had %d keys",
-                            live, tie_groups, largest_tie);
+
+                serverLog(LL_NOTICE,
+                          "evpool: %d candidate keys, %d groups of tied scores, biggest group had %d keys, idle=[%s]",
+                          live, tie_groups, largest_tie, idles);
 
                 /* Go backward from best to worst element to evict. */
                 for (k = EVPOOL_SIZE - 1; k >= 0; k--) {
