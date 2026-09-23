@@ -1,3 +1,4 @@
+#include "server.h"
 #include "lrulfu.h"
 #include <stdlib.h>
 
@@ -173,9 +174,15 @@ uint32_t lrulfu_getIdleness(uint32_t lrulfu, uint32_t *idleness) {
             // *idleness = (t << 8) / freq;
 
             /* Follows the MAX - freq of original LFU */
-            uint32_t p = ((uint32_t)freq << 8) / t;   
+            // uint32_t p = ((uint32_t)freq << 8) / t;   
+            
+            /* Morris Counter - Needs overflow handling for freq!! */
+            uint32_t n_est = (1u << freq) - 1;         
+            uint32_t p = (n_est << 8) / (t * 1000);
             *idleness = ((uint32_t)UINT8_MAX << 8) - p;                
         }
+        serverLog(LL_NOTICE, "getIdleness: elapsed(t)=%u freq(n)=%u -> idle=%u", (unsigned)elapsed, (unsigned)freq,
++                  (unsigned)*idleness);
     } else {
         *idleness = lru_getIdleSecs(lrulfu);
     }
