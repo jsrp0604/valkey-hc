@@ -1,6 +1,7 @@
 #include "server.h"
 #include "lrulfu.h"
 #include <stdlib.h>
+#include <math.h>
 
 static const uint32_t LRULFU_MASK = (1 << LRULFU_BITS) - 1;
 
@@ -114,9 +115,9 @@ static uint32_t LFUDecay(uint32_t lfu) {
 static uint8_t LFULogIncr(uint8_t freq) {
     if (freq == 255) return freq;
     double r = (double)rand() / RAND_MAX;
-    double baseval = (int)freq - LFU_INIT_VAL;
-    if (baseval < 0) baseval = 0;
-    double p = 1.0 / (baseval * lfu_config_log_factor + 1);
+    /* Actual Morris Counter instead of previous logarithmic counter*/
+    double a = 1.0 / lfu_config_log_factor;
+    double p = pow(1.0 / (1.0 + a), freq);
     if (r < p) freq++;
     return freq;
 }
@@ -176,8 +177,9 @@ uint32_t lrulfu_getIdleness(uint32_t lrulfu, uint32_t *idleness) {
             /* Follows the MAX - freq of original LFU */
             // uint32_t p = ((uint32_t)freq << 8) / t;   
             
-            /* Morris Counter - Needs overflow handling for freq!! */
-            uint32_t n_est = (1u << freq) - 1;         
+            /* Morris Counter Estimator */
+            double a = 1.0 / lfu_config_log_factor;
+            uint32_t n_est = (uint32_t)((1.0 / a) * (pow(1.0 + a, freq) - 1.0));        
             uint32_t p = (n_est << 8) / (t * 1000);
             *idleness = ((uint32_t)UINT8_MAX << 8) - p;                
         }
