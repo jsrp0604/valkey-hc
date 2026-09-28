@@ -189,6 +189,29 @@ int evictionPoolPopulate(serverDb *db, kvstore *samplekvs, struct evictionPoolEn
     return count;
 }
 
+/* For every key currently in the eviction pool, logs the idleness  
+ * score cached next to the idleness recomputed now from the object */
+void evictionPoolLogIdleness(void) {
+    struct evictionPoolEntry *pool = EvictionPoolLRU;
+    if (pool == NULL) return;
+    if (!(server.maxmemory_policy & (MAXMEMORY_FLAG_LRU | MAXMEMORY_FLAG_LFU))) return;
+
+    for (int k = 0; k < EVPOOL_SIZE; k++) {
+        if (pool[k].key == NULL) continue;
+        serverDb *db = server.db[pool[k].dbid];
+        if (db == NULL) continue;
+        kvstore *kvs = (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ? db->keys : db->expires;
+        void *entry = NULL;
+        if (kvstoreHashtableFind(kvs, pool[k].slot, pool[k].key, &entry)) {
+            serverLog(LL_NOTICE, "evpool[%d] key=%s db=%d pool_idle=%llu actual_idle=%u", k, pool[k].key,
+                      pool[k].dbid, pool[k].idle, objectGetIdleness(entry));
+        } else {
+            serverLog(LL_NOTICE, "evpool[%d] key=%s db=%d pool_idle=%llu actual_idle=(key gone)", k, pool[k].key,
+                      pool[k].dbid, pool[k].idle);
+        }
+    }
+}
+
 /* We don't want to count AOF buffers and replicas output buffers as
  * used memory: the eviction should use mostly data size, because
  * it can cause feedback-loop when we push DELs into them, putting

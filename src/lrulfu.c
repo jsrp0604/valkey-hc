@@ -187,7 +187,6 @@ uint32_t lrulfu_getIdleness(uint32_t lrulfu, uint32_t *idleness) {
 +                  (unsigned)*idleness);
     } else {
         *idleness = lru_getIdleSecs(lrulfu);
-        serverLog(LL_NOTICE, "getIdleness: idle in time=%u", (unsigned)*idleness);
     }
     return lrulfu;
 }
