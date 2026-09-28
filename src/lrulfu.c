@@ -124,7 +124,7 @@ static uint8_t LFULogIncr(uint8_t freq) {
 
 
 uint32_t lfu_touch(uint32_t lfu) {
-    lfu = LFUDecay(lfu);
+    // lfu = LFUDecay(lfu);
     uint8_t freq = (uint8_t)lfu;
     freq = LFULogIncr(freq);
     return (lfu & ~(uint32_t)UINT8_MAX) | freq;
@@ -132,7 +132,7 @@ uint32_t lfu_touch(uint32_t lfu) {
 
 
 uint32_t lfu_getFrequency(uint32_t lfu, uint8_t *freq) {
-    lfu = LFUDecay(lfu);
+    // lfu = LFUDecay(lfu);
     *freq = (uint8_t)lfu;
     return lfu;
 }
@@ -187,6 +187,7 @@ uint32_t lrulfu_getIdleness(uint32_t lrulfu, uint32_t *idleness) {
 +                  (unsigned)*idleness);
     } else {
         *idleness = lru_getIdleSecs(lrulfu);
+        serverLog(LL_NOTICE, "getIdleness: idle in time=%u", (unsigned)*idleness);
     }
     return lrulfu;
 }
