@@ -115,9 +115,9 @@ static uint32_t LFUDecay(uint32_t lfu) {
 static uint8_t LFULogIncr(uint8_t freq) {
     if (freq == 255) return freq;
     double r = (double)rand() / RAND_MAX;
-    /* Actual Morris Counter instead of previous logarithmic counter*/
-    double a = 1.0 / lfu_config_log_factor;
-    double p = pow(1.0 / (1.0 + a), freq);
+    double baseval = (int)freq - LFU_INIT_VAL;
+    if (baseval < 0) baseval = 0;
+    double p = 1.0 / (baseval * lfu_config_log_factor + 1);
     if (r < p) freq++;
     return freq;
 }
@@ -177,11 +177,11 @@ uint32_t lrulfu_getIdleness(uint32_t lrulfu, uint32_t *idleness) {
             /* Follows the MAX - freq of original LFU */
             // uint32_t p = ((uint32_t)freq << 8) / t;   
             
-            /* Morris Counter Estimator */
-            double a = 1.0 / lfu_config_log_factor;
-            uint32_t n_est = (uint32_t)((1.0 / a) * (pow(1.0 + a, freq) - 1.0));        
+            /* Morris Counter Estimator for priority function */
+            uint8_t safe_freq = (freq > 24) ? 24 : freq; 
+            uint32_t n_est = (1u << safe_freq) - 1;
             uint32_t p = (n_est << 8) / (t * 1000);
-            *idleness = ((uint32_t)UINT8_MAX << 8) - p;                
+            *idleness = ((uint32_t)UINT8_MAX << 8) - p;             
         }
         serverLog(LL_NOTICE, "getIdleness: elapsed(t)=%u freq(n)=%u -> idle=%u", (unsigned)elapsed, (unsigned)freq,
 +                  (unsigned)*idleness);
