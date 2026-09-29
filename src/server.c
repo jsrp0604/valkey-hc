@@ -1691,8 +1691,12 @@ long long serverCron(struct aeEventLoop *eventLoop, long long id, void *clientDa
     /* Handle background operations on databases. */
     databasesCron();
 
-    /* Debug: Comparison of cached vs. current idleness of eviction pool keys. */
-    run_with_period(1000) evictionPoolLogIdleness();
+    /* Log: Comparison of cached vs. current idleness of eviction pool keys.
+     * Refresh of the pool idleness values after the log */
+    run_with_period(1000) {
+        evictionPoolLogIdleness();
+        evictionPoolRefreshIdleness();
+    }
 
     /* Start a scheduled AOF rewrite if this was requested by the user while
      * a BGSAVE was in progress. We don't start the rewrite if there is an

@@ -212,6 +212,44 @@ void evictionPoolLogIdleness(void) {
     }
 }
 
+/* Due to staleness of idleness values in the eviction pool, the values are 
+ * recomputed, dropping non-existing keys and resorting the pool. */
+
+void evictionPoolRefreshIdleness(void) {
+    struct evictionPoolEntry *pool = EvictionPoolLRU;
+    if (pool == NULL) return;
+    if (!(server.maxmemory_policy & (MAXMEMORY_FLAG_LRU | MAXMEMORY_FLAG_LFU))) return;
+
+    for (int k = 0; k < EVPOOL_SIZE; k++) {
+        if (pool[k].key == NULL) continue;
+        serverDb *db = server.db[pool[k].dbid];
+        void *entry = NULL;
+        if (db != NULL) {
+            kvstore *kvs = (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ? db->keys : db->expires;
+            if (kvstoreHashtableFind(kvs, pool[k].slot, pool[k].key, &entry)) {
+                pool[k].idle = objectGetIdleness(entry);
+                continue;
+            }
+        }
+        /* Ghost entries get dropped. */
+        if (pool[k].key != pool[k].cached) sdsfree(pool[k].key);
+        pool[k].key = NULL;
+        pool[k].idle = 0;
+    }
+
+    /* Re-sorting of the pool with insertion sort */
+    for (int i = 1; i < EVPOOL_SIZE; i++) {
+        if (pool[i].key == NULL) continue;
+        struct evictionPoolEntry tmp = pool[i];
+        int j = i - 1;
+        while (j >= 0 && (pool[j].key == NULL || pool[j].idle > tmp.idle)) {
+            pool[j + 1] = pool[j];
+            j--;
+        }
+        pool[j + 1] = tmp;
+    }
+}
+
 /* We don't want to count AOF buffers and replicas output buffers as
  * used memory: the eviction should use mostly data size, because
  * it can cause feedback-loop when we push DELs into them, putting
