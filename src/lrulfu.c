@@ -183,8 +183,8 @@ uint32_t lrulfu_getIdleness(uint32_t lrulfu, uint32_t *idleness) {
             uint32_t p = (n_est << 8) / (t * 1000);
             *idleness = ((uint32_t)UINT8_MAX << 8) - p;             
         }
-        serverLog(LL_NOTICE, "getIdleness: elapsed(t)=%u freq(n)=%u -> idle=%u", (unsigned)elapsed, (unsigned)freq,
-+                  (unsigned)*idleness);
+        // serverLog(LL_NOTICE, "getIdleness: elapsed(t)=%u freq(n)=%u -> idle=%u", (unsigned)elapsed, (unsigned)freq,
+// +                  (unsigned)*idleness);
     } else {
         *idleness = lru_getIdleSecs(lrulfu);
     }

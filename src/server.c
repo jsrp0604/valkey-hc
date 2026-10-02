@@ -1694,7 +1694,7 @@ long long serverCron(struct aeEventLoop *eventLoop, long long id, void *clientDa
     /* Log: Comparison of cached vs. current idleness of eviction pool keys.
      * Refresh of the pool idleness values after the log */
     run_with_period(1000) {
-        evictionPoolLogIdleness();
+        // evictionPoolLogIdleness();
         evictionPoolRefreshIdleness();
     }
 

@@ -203,11 +203,11 @@ void evictionPoolLogIdleness(void) {
         kvstore *kvs = (server.maxmemory_policy & MAXMEMORY_FLAG_ALLKEYS) ? db->keys : db->expires;
         void *entry = NULL;
         if (kvstoreHashtableFind(kvs, pool[k].slot, pool[k].key, &entry)) {
-            serverLog(LL_NOTICE, "evpool[%d] key=%s db=%d pool_idle=%llu actual_idle=%u", k, pool[k].key,
-                      pool[k].dbid, pool[k].idle, objectGetIdleness(entry));
+            // serverLog(LL_NOTICE, "evpool[%d] key=%s db=%d pool_idle=%llu actual_idle=%u", k, pool[k].key,
+            //           pool[k].dbid, pool[k].idle, objectGetIdleness(entry));
         } else {
-            serverLog(LL_NOTICE, "evpool[%d] key=%s db=%d pool_idle=%llu actual_idle=(key gone)", k, pool[k].key,
-                      pool[k].dbid, pool[k].idle);
+            // serverLog(LL_NOTICE, "evpool[%d] key=%s db=%d pool_idle=%llu actual_idle=(key gone)", k, pool[k].key,
+            //           pool[k].dbid, pool[k].idle);
         }
     }
 }
@@ -605,9 +605,9 @@ int performEvictions(void) {
                 if (run > 1) tie_groups++;
                 if (run > largest_tie) largest_tie = run;
 
-                serverLog(LL_NOTICE,
-                          "evpool: %d candidate keys, %d groups of tied scores, biggest group had %d keys, idle=[%s]",
-                          live, tie_groups, largest_tie, idles);
+                // serverLog(LL_NOTICE,
+                //           "evpool: %d candidate keys, %d groups of tied scores, biggest group had %d keys, idle=[%s]",
+                //           live, tie_groups, largest_tie, idles);
 
                 /* Go backward from best to worst element to evict. */
                 for (k = EVPOOL_SIZE - 1; k >= 0; k--) {
